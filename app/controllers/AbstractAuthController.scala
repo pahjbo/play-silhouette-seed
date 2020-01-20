@@ -8,6 +8,7 @@ import play.api.mvc._
 import utils.route.Calls
 
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Success
 
 /**
  * `AbstractAuthController` base with support methods to authenticate an user.
@@ -21,14 +22,14 @@ abstract class AbstractAuthController(
 
   /**
    * Performs user authentication
-   * @param user User data
+   *
    * @param rememberMe Remember me flag
    * @param request Initial request
    * @return The result to display.
    */
-  protected def authenticateUser(user: User, rememberMe: Boolean)(implicit request: RequestHeader): Future[AuthenticatorResult] = {
+  protected def authenticateUser(loginInfo: LoginInfo, rememberMe: Boolean)(implicit request: RequestHeader): Future[AuthenticatorResult] = {
     val result = Redirect(Calls.home)
-    authenticatorService.create(user.loginInfo).map {
+    authenticatorService.create(loginInfo).map {
       case authenticator if rememberMe =>
         authenticator.copy(
           expirationDateTime = clock.now + scc.rememberMeConfig.expiry,
@@ -37,10 +38,16 @@ abstract class AbstractAuthController(
         )
       case authenticator => authenticator
     }.flatMap { authenticator =>
-      eventBus.publish(LoginEvent(user, request))
       authenticatorService.init(authenticator).flatMap { v =>
         authenticatorService.embed(v, result)
       }
+    }.andThen {
+      case Success(_) =>
+        userService.retrieve(loginInfo).foreach { maybeUser =>
+          maybeUser.foreach(user =>
+            eventBus.publish(LoginEvent(user, request))
+          )
+        }
     }
   }
 }

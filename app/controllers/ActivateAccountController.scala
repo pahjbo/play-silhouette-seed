@@ -57,8 +57,8 @@ class ActivateAccountController @Inject() (
    */
   def activate(token: UUID) = UnsecuredAction.async { implicit request: Request[AnyContent] =>
     authTokenService.validate(token).flatMap {
-      case Some(authToken) => userService.retrieve(authToken.userID).flatMap {
-        case Some(user) if user.loginInfo.providerID == CredentialsProvider.ID =>
+      case Some(authToken) => userService.retrieve(authToken.userID, CredentialsProvider.ID).flatMap {
+        case Some((user, loginInfo)) =>
           userService.save(user.copy(activated = true)).map { _ =>
             Redirect(Calls.signin).flashing("success" -> Messages("account.activated"))
           }

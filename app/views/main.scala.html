@@ -4,8 +4,9 @@
 @import org.webjars.play.WebJarsUtil
 @import controllers.AssetsFinder
 @import views.html.helper._
+@import com.mohiva.play.silhouette.api.LoginInfo
 
-@(title: String, user: Option[models.User] = None)(content: Html)(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder, webJarsUtil: WebJarsUtil)
+@(title: String, user: Option[models.User] = None, loginInfo: Option[LoginInfo] = None)(content: Html)(implicit request: RequestHeader, messages: Messages, assets: AssetsFinder, webJarsUtil: WebJarsUtil)
 
 <!DOCTYPE html>
 <html lang="en">
@@ -44,8 +45,10 @@
                     <div class="navbar-nav">
                         @user.map { u =>
                         <a class="nav-link" href="@controllers.routes.ApplicationController.index">@u.name</a>
-                        @if(u.loginInfo.providerID == com.mohiva.play.silhouette.impl.providers.CredentialsProvider.ID) {
-                        <a class="nav-item nav-link" href="@controllers.routes.ChangePasswordController.view">@messages("change.password")</a>
+                        @loginInfo.map { info =>
+                            @if(info.providerID == com.mohiva.play.silhouette.impl.providers.CredentialsProvider.ID) {
+                            <a class="nav-item nav-link" href="@controllers.routes.ChangePasswordController.view">@messages("change.password")</a>
+                            }
                         }
                         <a class="nav-item nav-link" href="@controllers.routes.ApplicationController.signOut">@messages("sign.out")</a>
                         }.getOrElse {

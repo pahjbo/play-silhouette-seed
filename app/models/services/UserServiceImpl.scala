@@ -27,6 +27,13 @@ class UserServiceImpl @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext
   def retrieve(id: UUID) = userDAO.find(id)
 
   /**
+   * Retrieves a user that matches the specified ID with the given credentials provider.
+   *
+   * @param id The ID to retrieve a user.
+   * @return The retrieved user or None if no user could be retrieved for the given ID.
+   */
+  override def retrieve(id: UUID, providerId: String): Future[Option[(User, LoginInfo)]] = userDAO.findLoginInfo(id, providerId)
+  /**
    * Retrieves a user that matches the specified login info.
    *
    * @param loginInfo The login info to retrieve a user.
@@ -52,7 +59,8 @@ class UserServiceImpl @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext
    */
   def save(profile: CommonSocialProfile) = {
     userDAO.find(profile.loginInfo).flatMap {
-      case Some(user) => // Update user with profile
+      case Some(user) =>
+        // XXX Add user to list of profiles here!
         userDAO.save(user.copy(
           firstName = profile.firstName,
           lastName = profile.lastName,
@@ -60,10 +68,10 @@ class UserServiceImpl @Inject() (userDAO: UserDAO)(implicit ex: ExecutionContext
           email = profile.email,
           avatarURL = profile.avatarURL
         ))
-      case None => // Insert a new user
+      case None =>
+        // XXX Insert a new user and connect the profile to it
         userDAO.save(User(
           userID = UUID.randomUUID(),
-          loginInfo = profile.loginInfo,
           firstName = profile.firstName,
           lastName = profile.lastName,
           fullName = profile.fullName,

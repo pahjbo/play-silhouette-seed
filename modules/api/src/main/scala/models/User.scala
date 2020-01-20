@@ -2,13 +2,12 @@ package models
 
 import java.util.UUID
 
-import com.mohiva.play.silhouette.api.{ Identity, LoginInfo }
+import com.mohiva.play.silhouette.api.{ Identity }
 
 /**
  * The user object.
  *
  * @param userID The unique ID of the user.
- * @param loginInfo The linked login info.
  * @param firstName Maybe the first name of the authenticated user.
  * @param lastName Maybe the last name of the authenticated user.
  * @param fullName Maybe the full name of the authenticated user.
@@ -18,7 +17,6 @@ import com.mohiva.play.silhouette.api.{ Identity, LoginInfo }
  */
 case class User(
   userID: UUID,
-  loginInfo: LoginInfo,
   firstName: Option[String],
   lastName: Option[String],
   fullName: Option[String],

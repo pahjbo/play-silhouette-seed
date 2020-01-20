@@ -9,7 +9,6 @@ import scala.concurrent.Future
 /**
  * Grants only access if a user has authenticated with the given provider.
  *
- * @param provider The provider ID the user must authenticated with.
  * @tparam A The type of the authenticator.
  */
 case class WithProvider[A <: Authenticator](provider: String) extends Authorization[User, A] {
@@ -26,7 +25,6 @@ case class WithProvider[A <: Authenticator](provider: String) extends Authorizat
   override def isAuthorized[B](user: User, authenticator: A)(
     implicit
     request: Request[B]): Future[Boolean] = {
-
-    Future.successful(user.loginInfo.providerID == provider)
+    Future.successful(authenticator.loginInfo.providerID == provider)
   }
 }

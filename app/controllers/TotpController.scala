@@ -37,7 +37,7 @@ class TotpController @Inject() (
     val credentials = totpProvider.createCredentials(user.email.get)
     val totpInfo = credentials.totpInfo
     val formData = TotpSetupForm.form.fill(TotpSetupForm.Data(totpInfo.sharedKey, totpInfo.scratchCodes, credentials.scratchCodesPlain))
-    authInfoRepository.find[GoogleTotpInfo](request.identity.loginInfo).map { totpInfoOpt =>
+    authInfoRepository.find[GoogleTotpInfo](request.authenticator.loginInfo).map { totpInfoOpt =>
       Ok(home(user, totpInfoOpt, Some((formData, credentials))))
     }
   }
@@ -47,8 +47,7 @@ class TotpController @Inject() (
    * @return The result to display.
    */
   def disableTotp = SecuredAction.async { implicit request =>
-    val user = request.identity
-    authInfoRepository.remove[GoogleTotpInfo](user.loginInfo)
+    authInfoRepository.remove[GoogleTotpInfo](request.authenticator.loginInfo)
     Future(Redirect(Calls.home).flashing("info" -> Messages("totp.disabling.info")))
   }
 
@@ -59,13 +58,13 @@ class TotpController @Inject() (
   def enableTotpSubmit = SecuredAction.async { implicit request =>
     val user = request.identity
     TotpSetupForm.form.bindFromRequest.fold(
-      form => authInfoRepository.find[GoogleTotpInfo](request.identity.loginInfo).map { totpInfoOpt =>
+      form => authInfoRepository.find[GoogleTotpInfo](request.authenticator.loginInfo).map { totpInfoOpt =>
         BadRequest(home(user, totpInfoOpt))
       },
       data => {
         totpProvider.authenticate(data.sharedKey, data.verificationCode).flatMap {
           case Some(loginInfo: LoginInfo) => {
-            authInfoRepository.add[GoogleTotpInfo](user.loginInfo, GoogleTotpInfo(data.sharedKey, data.scratchCodes))
+            authInfoRepository.add[GoogleTotpInfo](loginInfo, GoogleTotpInfo(data.sharedKey, data.scratchCodes))
             Future(Redirect(Calls.home).flashing("success" -> Messages("totp.enabling.info")))
           }
           case _ => Future.successful(Redirect(Calls.home).flashing("error" -> Messages("invalid.verification.code")))
@@ -89,7 +88,7 @@ class TotpController @Inject() (
         userService.retrieve(data.userID).flatMap {
           case Some(user) =>
             totpProvider.authenticate(data.sharedKey, data.verificationCode).flatMap {
-              case Some(_) => authenticateUser(user, data.rememberMe)
+              case Some(loginInfo) => authenticateUser(loginInfo, data.rememberMe)
               case _ => Future.successful(Redirect(totpControllerRoute).flashing("error" -> Messages("invalid.verification.code")))
             }.recover {
               case _: ProviderException =>

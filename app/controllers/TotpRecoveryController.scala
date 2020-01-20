@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import com.mohiva.play.silhouette.api.LoginInfo
 import com.mohiva.play.silhouette.api.exceptions.ProviderException
 import com.mohiva.play.silhouette.impl.exceptions.IdentityNotFoundException
 import com.mohiva.play.silhouette.impl.providers._
@@ -31,8 +32,13 @@ class TotpRecoveryController @Inject() (
     Future.successful(Ok(totpRecovery(TotpRecoveryForm.form.fill(TotpRecoveryForm.Data(userID, sharedKey, rememberMe)))))
   }
 
+  def generateLoginInfo(data: TotpRecoveryForm.Data): LoginInfo = {
+    LoginInfo("", "")
+  }
+
   /**
    * Handles the submitted form with TOTP verification key.
+   *
    * @return The result to display.
    */
   def submit = UnsecuredAction.async { implicit request =>
@@ -42,12 +48,13 @@ class TotpRecoveryController @Inject() (
         val totpRecoveryControllerRoute = routes.TotpRecoveryController.view(data.userID, data.sharedKey, data.rememberMe)
         userService.retrieve(data.userID).flatMap {
           case Some(user) => {
-            authInfoRepository.find[GoogleTotpInfo](user.loginInfo).flatMap {
+            val loginInfo = generateLoginInfo(data)
+            authInfoRepository.find[GoogleTotpInfo](loginInfo).flatMap {
               case Some(totpInfo) =>
                 totpProvider.authenticate(totpInfo, data.recoveryCode).flatMap {
                   case Some(updated) => {
-                    authInfoRepository.update[GoogleTotpInfo](user.loginInfo, updated._2)
-                    authenticateUser(user, data.rememberMe)
+                    authInfoRepository.update[GoogleTotpInfo](loginInfo, updated._2)
+                    authenticateUser(loginInfo, data.rememberMe)
                   }
                   case _ => Future.successful(Redirect(totpRecoveryControllerRoute).flashing("error" -> Messages("invalid.recovery.code")))
                 }.recover {

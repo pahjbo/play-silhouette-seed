@@ -46,10 +46,10 @@ class SignInController @Inject() (
             case Some(user) if !user.activated =>
               Future.successful(Ok(activateAccount(data.email)))
             case Some(user) =>
-              authInfoRepository.find[GoogleTotpInfo](user.loginInfo).flatMap {
+              authInfoRepository.find[GoogleTotpInfo](loginInfo).flatMap {
                 case Some(totpInfo) => Future.successful(Ok(totp(TotpForm.form.fill(TotpForm.Data(
                   user.userID, totpInfo.sharedKey, data.rememberMe)))))
-                case _ => authenticateUser(user, data.rememberMe)
+                case _ => authenticateUser(loginInfo, data.rememberMe)
               }
             case None => Future.failed(new IdentityNotFoundException("Couldn't find user"))
           }

@@ -2,7 +2,7 @@ package controllers
 
 import com.mohiva.play.silhouette.api.LogoutEvent
 import com.mohiva.play.silhouette.api.actions._
-import com.mohiva.play.silhouette.impl.providers.GoogleTotpInfo
+import com.mohiva.play.silhouette.impl.providers.{ CredentialsProvider, GoogleTotpInfo }
 import javax.inject.Inject
 import play.api.mvc._
 import utils.route.Calls
@@ -23,7 +23,7 @@ class ApplicationController @Inject() (
    * @return The result to display.
    */
   def index = SecuredAction.async { implicit request: SecuredRequest[EnvType, AnyContent] =>
-    authInfoRepository.find[GoogleTotpInfo](request.identity.loginInfo).map { totpInfoOpt =>
+    authInfoRepository.find[GoogleTotpInfo](request.authenticator.loginInfo).map { totpInfoOpt =>
       Ok(home(request.identity, totpInfoOpt))
     }
   }
