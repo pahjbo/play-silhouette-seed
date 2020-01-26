@@ -1,11 +1,10 @@
 package models.services
 
 import java.util.UUID
-import javax.inject.Inject
 
+import javax.inject.Inject
 import com.mohiva.play.silhouette.api.util.Clock
-import models.AuthToken
-import models.daos.AuthTokenDAO
+import models.{ AuthToken, AuthTokenDAO }
 import org.joda.time.DateTimeZone
 
 import scala.concurrent.{ ExecutionContext, Future }

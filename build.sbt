@@ -14,7 +14,7 @@ name := "play-silhouette-seed"
 
 version := "6.0.0"
 
-scalaVersion in ThisBuild := "2.13.1"
+scalaVersion in ThisBuild := "2.12.10"
 
 resolvers += Resolver.jcenterRepo
 
@@ -62,7 +62,10 @@ lazy val slick = (project in file("modules/slick"))
       "com.typesafe.slick" %% "slick-hikaricp" % "3.3.2",
       "com.github.tototoshi" %% "slick-joda-mapper" % "2.4.1",
       "javax.inject" % "javax.inject" % "1",
-      "com.google.inject" % "guice" % "4.2.2"
+      "com.google.inject" % "guice" % "4.2.2",
+      "net.codingwell" %% "scala-guice" % "4.2.6",
+      "com.mohiva" %% "play-silhouette-persistence" % "6.1.1",
+      "com.mohiva" %% "play-silhouette-totp" % "6.1.1",
     ),
 
     slickCodegenDatabaseUrl := databaseUrl,
@@ -75,12 +78,13 @@ lazy val slick = (project in file("modules/slick"))
     sourceGenerators in Compile += slickCodegen.taskValue,
     slickCodegenCodeGenerator := { (model: m.Model) =>
       new SourceCodeGenerator(model) {
-        override def code = "import java.time._\n" + super.code
+        override def code =
+          "import com.github.tototoshi.slick.H2JodaSupport._\n" + "import org.joda.time.DateTime\n" + super.code
 
         override def Table = new Table(_) {
           override def Column = new Column(_) {
             override def rawType = model.tpe match {
-              case "java.sql.Timestamp" => "java.time.Instant" // kill j.s.Timestamp
+              case "java.sql.Timestamp" => "DateTime" // kill j.s.Timestamp
               case _ =>
                 super.rawType
             }
@@ -90,9 +94,12 @@ lazy val slick = (project in file("modules/slick"))
     },
   ).dependsOn(api)
 
-lazy val api = (project in file("modules/api"))
+lazy val api = (project in file("modules/api")).enablePlugins(PlayService).settings(
+  resolvers += "atlassian" at "https://packages.atlassian.com/maven-public/",
+  libraryDependencies += "com.mohiva" %% "play-silhouette" % "6.1.1"
+)
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
+lazy val root = (project in file(".")).enablePlugins(PlayScala).dependsOn(api).aggregate(api, slick)
 
 routesImport += "utils.route.Binders._"
 
