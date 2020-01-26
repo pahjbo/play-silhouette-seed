@@ -1,0 +1,3 @@
+<configuration>
+  <include resource="terse-logback/default.xml"/>
+</configuration>
