@@ -12,13 +12,12 @@ lazy val databasePassword = sys.env.getOrElse("DB_DEFAULT_PASSWORD", "")
 
 name := "play-silhouette-seed"
 
-version := "6.0.0"
+version in ThisBuild := "6.0.0"
 
 scalaVersion in ThisBuild := "2.12.10"
 
-resolvers += Resolver.jcenterRepo
-
-resolvers += "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+resolvers in ThisBuild += Resolver.jcenterRepo
+resolvers in ThisBuild += "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 libraryDependencies ++= Seq(
   "com.mohiva" %% "play-silhouette" % "6.1.1",
@@ -54,18 +53,17 @@ lazy val flyway = (project in file("modules/flyway"))
   )
 
 lazy val slick = (project in file("modules/slick"))
-  .enablePlugins(CodegenPlugin)
+  .enablePlugins(CodegenPlugin, PlayService)
   .settings(
     libraryDependencies ++= Seq(
-      "com.zaxxer" % "HikariCP" % "3.3.1",
-      "com.typesafe.slick" %% "slick" % "3.3.2",
-      "com.typesafe.slick" %% "slick-hikaricp" % "3.3.2",
+      "com.typesafe.play" %% "play-slick" % "4.0.2",
       "com.github.tototoshi" %% "slick-joda-mapper" % "2.4.1",
       "javax.inject" % "javax.inject" % "1",
-      "com.google.inject" % "guice" % "4.2.2",
+      guice,
       "net.codingwell" %% "scala-guice" % "4.2.6",
       "com.mohiva" %% "play-silhouette-persistence" % "6.1.1",
       "com.mohiva" %% "play-silhouette-totp" % "6.1.1",
+      "org.virtuslab" %% "unicorn-play" % "1.3.2"
     ),
 
     slickCodegenDatabaseUrl := databaseUrl,
@@ -74,7 +72,7 @@ lazy val slick = (project in file("modules/slick"))
     slickCodegenDriver := _root_.slick.jdbc.H2Profile,
     slickCodegenJdbcDriver := "org.h2.Driver",
     slickCodegenOutputPackage := "models.slick",
-    slickCodegenExcludedTables := Seq("schema_version"),
+    slickCodegenExcludedTables := Seq("flyway_schema_history"),
     sourceGenerators in Compile += slickCodegen.taskValue,
     slickCodegenCodeGenerator := { (model: m.Model) =>
       new SourceCodeGenerator(model) {

@@ -2,7 +2,8 @@ package models.slick
 
 import com.google.inject.AbstractModule
 import com.mohiva.play.silhouette.api.util.PasswordInfo
-import com.mohiva.play.silhouette.impl.providers.{ OAuth1Info, OAuth2Info, OpenIDInfo }
+import com.mohiva.play.silhouette.impl.providers.{ GoogleTotpInfo, OAuth1Info, OAuth2Info, OpenIDInfo }
+import com.mohiva.play.silhouette.persistence.daos.{ DelegableAuthInfoDAO, InMemoryAuthInfoDAO }
 import models.daos.{ AuthTokenDAOImpl, UserDAOImpl }
 import models.{ AuthTokenDAO, UserDAO }
 import net.codingwell.scalaguice.ScalaModule

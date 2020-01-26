@@ -1,23 +1,17 @@
 package models.slick
 
 import java.time.Instant
+import java.util.UUID
 
+import com.mohiva.play.silhouette.api.LoginInfo
 import javax.inject.{ Inject, Singleton }
 import models.{ User, UserDAO }
+import org.joda.time.DateTime
 import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-/**
- * A User DAO implemented with Slick, leveraging Slick code gen.
- *
- * Note that you must run "flyway/flywayMigrate" before "compile" here.
- *
- * @param db the slick database that this user DAO is using internally, bound through Module.
- * @param ec a CPU bound execution context.  Slick manages blocking JDBC calls with its
- *    own internal thread pool, so Play's default execution context is fine here.
- */
 @Singleton
 class SlickUserDAO @Inject() (db: Database)(implicit ec: ExecutionContext) extends UserDAO with Tables {
 
@@ -26,40 +20,60 @@ class SlickUserDAO @Inject() (db: Database)(implicit ec: ExecutionContext) exten
   import profile.api._
 
   private val queryById = Compiled(
-    (id: Rep[String]) => Users.filter(_.id === id))
+    (id: Rep[UUID]) => Users.filter(_.userId === id))
 
-  def lookup(id: String): Future[Option[User]] = {
+  def find(id: UUID): Future[Option[User]] = {
     val f: Future[Option[UsersRow]] = db.run(queryById(id).result.headOption)
-    f.map(maybeRow => maybeRow.map(usersRowToUser))
+    f.map(maybeRow => maybeRow.map(UserRowToUser))
   }
+
+  /**
+   * Finds a user by its login info.
+   *
+   * @param loginInfo The login info of the user to find.
+   * @return The found user or None if no user for the given login info could be found.
+   */
+  override def find(loginInfo: LoginInfo): Future[Option[User]] = ???
+
+  /**
+   * Saves a user.
+   *
+   * @param user The user to save.
+   * @return The saved user.
+   */
+  override def save(user: User): Future[User] = ???
 
   def all: Future[Seq[User]] = {
     val f = db.run(Users.result)
-    f.map(seq => seq.map(usersRowToUser))
+    f.map(seq => seq.map(UserRowToUser))
   }
 
   def update(user: User): Future[Int] = {
-    db.run(queryById(user.id).update(userToUsersRow(user)))
+    db.run(queryById(user.userID).update(userToUserRow(user)))
   }
 
-  def delete(id: String): Future[Int] = {
+  def delete(id: UUID): Future[Int] = {
     db.run(queryById(id).delete)
   }
-
-  def create(user: User): Future[Int] = {
-    db.run(
-      Users += userToUsersRow(user.copy(createdAt = Instant.now())))
-  }
+  //
+  //  def create(user: User): Future[Int] = {
+  //    db.run(User += userToUserRow(user))
+  //  }
 
   def close(): Future[Unit] = {
     Future.successful(db.close())
   }
 
-  private def userToUsersRow(user: User): UsersRow = {
-    UsersRow(user.id, user.email, user.createdAt, user.updatedAt)
+  private def userToUserRow(user: User): UsersRow = {
+    UsersRow(user.userID, user.firstName, user.lastName, user.email, user.avatarURL)
   }
 
-  private def usersRowToUser(usersRow: UsersRow): User = {
-    User(usersRow.id, usersRow.email, usersRow.createdAt, usersRow.updatedAt)
+  private def UserRowToUser(row: UsersRow): User = {
+    User(
+      row.userId,
+      row.firstName, row.lastName,
+      Some(row.firstName + " " + row.lastName),
+      row.email, row.avatarUrl, activated = row.activated)
   }
+
 }
